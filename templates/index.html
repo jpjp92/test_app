@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>유튜브 다운로더</title>
+    <script>
+        async function downloadVideo() {
+            const url = document.getElementById('url').value;
+            if (!url) {
+                alert("URL을 입력하세요!");
+                return;
+            }
+
+            const response = await fetch('/download', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ url }),
+            });
+            const result = await response.json();
+            alert(result.message);
+        }
+    </script>
+</head>
+<body>
+    <h1>유튜브 다운로더</h1>
+    <p>다운로드할 유튜브 영상 URL을 입력하세요:</p>
+    <input type="text" id="url" placeholder="https://www.youtube.com/watch?v=example" style="width: 80%;">
+    <button onclick="downloadVideo()">다운로드</button>
+</body>
+</html>
