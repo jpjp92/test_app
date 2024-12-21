@@ -5,6 +5,9 @@ import os
 
 app = Flask(__name__)
 
+# GitHub 저장소의 cookies.txt 파일 경로
+COOKIES_PATH = os.path.join(os.path.dirname(__file__), 'cookies.txt')
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -22,23 +25,26 @@ def download_video():
                 print(f"다운로드 중... {percent}%")
         
         ydl_opts = {
-            'format': 'mp4/bestvideo+bestaudio/best',  # format 옵션 수정
+            'format': 'mp4/bestvideo+bestaudio/best',
             'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
             'merge_output_format': 'mp4',
             'progress_hooks': [progress_hook],
+            'cookiefile': COOKIES_PATH if os.path.exists(COOKIES_PATH) else None,
             'ignoreerrors': True,
             'no_warnings': True
         }
         
         try:
+            # 쿠키 파일 존재 여부 로깅
+            print(f"쿠키 파일 경로: {COOKIES_PATH}")
+            print(f"쿠키 파일 존재: {os.path.exists(COOKIES_PATH)}")
+            
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                # 먼저 정보 추출 시도
                 try:
                     info = ydl.extract_info(url, download=False)
                     if info is None:
                         return jsonify({"status": "error", "message": "동영상 정보를 가져올 수 없습니다."})
                     
-                    # 정보 추출 성공 시 다운로드 진행
                     info = ydl.extract_info(url, download=True)
                     filename = ydl.prepare_filename(info)
                     
@@ -59,6 +65,68 @@ def download_video():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+# from flask import Flask, render_template, request, jsonify, send_file
+# import yt_dlp
+# import tempfile
+# import os
+
+# app = Flask(__name__)
+
+# @app.route('/')
+# def index():
+#     return render_template('index.html')
+
+# @app.route('/download', methods=['POST'])
+# def download_video():
+#     url = request.form.get('url')
+#     if not url:
+#         return jsonify({"status": "error", "message": "URL을 입력하세요!"})
+    
+#     with tempfile.TemporaryDirectory() as temp_dir:
+#         def progress_hook(d):
+#             if d['status'] == 'downloading':
+#                 percent = d['_percent_str'].strip('%')
+#                 print(f"다운로드 중... {percent}%")
+        
+#         ydl_opts = {
+#             'format': 'mp4/bestvideo+bestaudio/best',  # format 옵션 수정
+#             'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
+#             'merge_output_format': 'mp4',
+#             'progress_hooks': [progress_hook],
+#             'ignoreerrors': True,
+#             'no_warnings': True
+#         }
+        
+#         try:
+#             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+#                 # 먼저 정보 추출 시도
+#                 try:
+#                     info = ydl.extract_info(url, download=False)
+#                     if info is None:
+#                         return jsonify({"status": "error", "message": "동영상 정보를 가져올 수 없습니다."})
+                    
+#                     # 정보 추출 성공 시 다운로드 진행
+#                     info = ydl.extract_info(url, download=True)
+#                     filename = ydl.prepare_filename(info)
+                    
+#                     if os.path.exists(filename):
+#                         return send_file(
+#                             filename,
+#                             as_attachment=True,
+#                             download_name=os.path.basename(filename)
+#                         )
+#                     else:
+#                         return jsonify({"status": "error", "message": "파일 다운로드에 실패했습니다."})
+                        
+#                 except yt_dlp.utils.DownloadError as e:
+#                     return jsonify({"status": "error", "message": f"다운로드 오류: {str(e)}"})
+                
+#         except Exception as e:
+#             return jsonify({"status": "error", "message": f"처리 중 오류가 발생했습니다: {str(e)}"})
+
+# if __name__ == '__main__':
+#     app.run(debug=True)
 
 
 # from flask import Flask, render_template, request, jsonify, send_file
