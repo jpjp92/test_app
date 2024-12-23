@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, send_file
 import yt_dlp
 import tempfile
 import os
+import re
 
 app = Flask(__name__)
 
@@ -15,34 +16,37 @@ def index():
 @app.route('/download', methods=['POST'])
 def download_video():
     url = request.form.get('url')
-    if not url:
-        return jsonify({"status": "error", "message": "URL을 입력하세요!"})
+    if not url or not re.match(r'^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$', url):
+        return jsonify({"status": "error", "message": "유효한 YouTube URL을 입력하세요!"})
     
     with tempfile.TemporaryDirectory() as temp_dir:
         def progress_hook(d):
             if d['status'] == 'downloading':
-                percent = d['_percent_str'].strip('%')
+                percent = d.get('_percent_str', '0%').strip('%')
                 print(f"다운로드 중... {percent}%")
         
+        # ydl 옵션 설정
         ydl_opts = {
             'format': 'mp4/bestvideo+bestaudio/best',
             'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
             'merge_output_format': 'mp4',
             'progress_hooks': [progress_hook],
-            'cookiefile': COOKIES_PATH if os.path.exists(COOKIES_PATH) else None,
             'ignoreerrors': True,
             'no_warnings': True
         }
         
+        # 쿠키 파일 설정
+        if os.path.exists(COOKIES_PATH):
+            ydl_opts['cookiefile'] = COOKIES_PATH
+        
         try:
-            # 쿠키 파일 존재 여부 로깅
             print(f"쿠키 파일 경로: {COOKIES_PATH}")
-            print(f"쿠키 파일 존재: {os.path.exists(COOKIES_PATH)}")
+            print(f"쿠키 파일 존재 여부: {os.path.exists(COOKIES_PATH)}")
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 try:
                     info = ydl.extract_info(url, download=False)
-                    if info is None:
+                    if not info:
                         return jsonify({"status": "error", "message": "동영상 정보를 가져올 수 없습니다."})
                     
                     info = ydl.extract_info(url, download=True)
@@ -65,6 +69,7 @@ def download_video():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 
 # from flask import Flask, render_template, request, jsonify, send_file
 # import yt_dlp
