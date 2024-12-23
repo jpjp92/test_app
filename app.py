@@ -3,15 +3,26 @@ import yt_dlp
 import tempfile
 import os
 import re
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
+import threading
 
 app = Flask(__name__)
-
-# GitHub 저장소의 cookies.txt 파일 경로
 COOKIES_PATH = os.path.join(os.path.dirname(__file__), './cookies.txt')
+DOWNLOAD_TIMEOUT = 180  # 3분 타임아웃
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+def download_video_with_timeout(url, temp_dir, ydl_opts):
+    def download():
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            return ydl.prepare_filename(info), info
+    
+    with ThreadPoolExecutor() as executor:
+        future = executor.submit(download)
+        try:
+            filename, info = future.result(timeout=DOWNLOAD_TIMEOUT)
+            return filename, info
+        except TimeoutError:
+            raise Exception("다운로드 시간이 초과되었습니다. 나중에 다시 시도해주세요.")
 
 @app.route('/download', methods=['POST'])
 def download_video():
@@ -20,61 +31,34 @@ def download_video():
         return jsonify({"status": "error", "message": "유효한 YouTube URL을 입력하세요!"})
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        def progress_hook(d):
-            if d['status'] == 'downloading':
-                percent = d.get('_percent_str', '0%').strip('%')
-                print(f"다운로드 중... {percent}%")
-
-        # ydl 옵션 설정
         ydl_opts = {
             'format': 'mp4/bestvideo+bestaudio/best',
             'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
             'merge_output_format': 'mp4',
-            'progress_hooks': [progress_hook],
             'ignoreerrors': True,
             'no_warnings': True,
-            'socket_timeout': 400  # 네트워크 타임아웃 설정
+            'socket_timeout': 30  # 소켓 타임아웃 30초로 감소
         }
 
-        # 쿠키 파일 설정
         if os.path.exists(COOKIES_PATH):
             ydl_opts['cookiefile'] = COOKIES_PATH
 
         try:
-            print(f"쿠키 파일 경로: {COOKIES_PATH}")
-            print(f"쿠키 파일 존재 여부: {os.path.exists(COOKIES_PATH)}")
-
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                try:
-                    # 동영상 정보 가져오기
-                    info = ydl.extract_info(url, download=False)
-                    if not info:
-                        return jsonify({"status": "error", "message": "동영상 정보를 가져올 수 없습니다."})
-
-                    # 동영상 다운로드
-                    info = ydl.extract_info(url, download=True)
-                    filename = ydl.prepare_filename(info)
-
-                    # 파일 확인 후 전송
-                    if os.path.exists(filename):
-                        return send_file(
-                            filename,
-                            as_attachment=True,
-                            download_name=os.path.basename(filename)
-                        )
-                    else:
-                        return jsonify({"status": "error", "message": "파일 다운로드에 실패했습니다."})
-
-                except yt_dlp.utils.DownloadError as e:
-                    print(f"다운로드 오류: {e}")
-                    return jsonify({"status": "error", "message": f"다운로드 오류: {str(e)}"})
-
+            filename, info = download_video_with_timeout(url, temp_dir, ydl_opts)
+            
+            if os.path.exists(filename):
+                return send_file(
+                    filename,
+                    as_attachment=True,
+                    download_name=os.path.basename(filename)
+                )
+            else:
+                return jsonify({"status": "error", "message": "파일 다운로드에 실패했습니다."})
+                
         except Exception as e:
-            print(f"처리 중 오류가 발생했습니다: {e}")
-            return jsonify({"status": "error", "message": f"처리 중 오류가 발생했습니다: {str(e)}"})
+            return jsonify({"status": "error", "message": str(e)})
 
 if __name__ == '__main__':
-    # 애플리케이션 실행
     app.run(debug=True)
 
 
