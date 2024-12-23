@@ -18,13 +18,13 @@ def download_video():
     url = request.form.get('url')
     if not url or not re.match(r'^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$', url):
         return jsonify({"status": "error", "message": "유효한 YouTube URL을 입력하세요!"})
-    
+
     with tempfile.TemporaryDirectory() as temp_dir:
         def progress_hook(d):
             if d['status'] == 'downloading':
                 percent = d.get('_percent_str', '0%').strip('%')
                 print(f"다운로드 중... {percent}%")
-        
+
         # ydl 옵션 설정
         ydl_opts = {
             'format': 'mp4/bestvideo+bestaudio/best',
@@ -32,26 +32,30 @@ def download_video():
             'merge_output_format': 'mp4',
             'progress_hooks': [progress_hook],
             'ignoreerrors': True,
-            'no_warnings': True
+            'no_warnings': True,
+            'socket_timeout': 120  # 네트워크 타임아웃 설정
         }
-        
+
         # 쿠키 파일 설정
         if os.path.exists(COOKIES_PATH):
             ydl_opts['cookiefile'] = COOKIES_PATH
-        
+
         try:
             print(f"쿠키 파일 경로: {COOKIES_PATH}")
             print(f"쿠키 파일 존재 여부: {os.path.exists(COOKIES_PATH)}")
-            
+
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 try:
+                    # 동영상 정보 가져오기
                     info = ydl.extract_info(url, download=False)
                     if not info:
                         return jsonify({"status": "error", "message": "동영상 정보를 가져올 수 없습니다."})
-                    
+
+                    # 동영상 다운로드
                     info = ydl.extract_info(url, download=True)
                     filename = ydl.prepare_filename(info)
-                    
+
+                    # 파일 확인 후 전송
                     if os.path.exists(filename):
                         return send_file(
                             filename,
@@ -60,14 +64,17 @@ def download_video():
                         )
                     else:
                         return jsonify({"status": "error", "message": "파일 다운로드에 실패했습니다."})
-                        
+
                 except yt_dlp.utils.DownloadError as e:
+                    print(f"다운로드 오류: {e}")
                     return jsonify({"status": "error", "message": f"다운로드 오류: {str(e)}"})
-                
+
         except Exception as e:
+            print(f"처리 중 오류가 발생했습니다: {e}")
             return jsonify({"status": "error", "message": f"처리 중 오류가 발생했습니다: {str(e)}"})
 
 if __name__ == '__main__':
+    # 애플리케이션 실행
     app.run(debug=True)
 
 
