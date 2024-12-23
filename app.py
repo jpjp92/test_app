@@ -33,7 +33,7 @@ def download_video():
             'progress_hooks': [progress_hook],
             'ignoreerrors': True,
             'no_warnings': True,
-            'socket_timeout': 120  # 네트워크 타임아웃 설정
+            'socket_timeout': 400  # 네트워크 타임아웃 설정
         }
 
         # 쿠키 파일 설정
