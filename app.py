@@ -32,15 +32,11 @@ def get_video_info(url, ydl_opts):
 
 def download_video(url, temp_dir, progress_hook):
     ydl_opts = {
-        'format': 'bestvideo[ext=mp4][height>=720]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'format': 'bestvideo[ext=mp4][height>=1080]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
         'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
         'merge_output_format': 'mp4',
         'progress_hooks': [progress_hook],
-        'socket_timeout': 30,
-        'postprocessors': [{
-            'key': 'FFmpegVideoConvertor',
-            'preferedformat': 'mp4'
-        }]
+        'socket_timeout': 30
     }
     
     if os.path.exists(COOKIES_PATH):
@@ -48,7 +44,13 @@ def download_video(url, temp_dir, progress_hook):
         
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
-        return ydl.prepare_filename(info)
+        filename = ydl.prepare_filename(info)
+        # mp4_ 제거
+        if filename.endswith('.mp4_.mp4'):
+            new_filename = filename.replace('.mp4_.mp4', '.mp4')
+            os.rename(filename, new_filename)
+            return new_filename
+        return filename
 
 @app.route('/')
 def index():
