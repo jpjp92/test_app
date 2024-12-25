@@ -15,60 +15,60 @@ def get_video_info(url, ydl_opts):
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         return ydl.extract_info(url, download=False)
 
-# def download_video(url, temp_dir, progress_hook):
-#     ydl_opts = {
-#         'format': 'bestvideo[ext=mp4][height>=1080]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-#         'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
-#         'merge_output_format': 'mp4',
-#         'progress_hooks': [progress_hook],
-#         'socket_timeout': 30
-#     }
-    
-#     if os.path.exists(COOKIES_PATH):
-#         ydl_opts['cookiefile'] = COOKIES_PATH
-        
-#     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-#         info = ydl.extract_info(url, download=True)
-#         filename = ydl.prepare_filename(info)
-#         # mp4_ 제거
-#         if filename.endswith('.mp4_.mp4'):
-#             new_filename = filename.replace('.mp4_.mp4', '.mp4')
-#             os.rename(filename, new_filename)
-#             return new_filename
-#         return filename
-
-
 def download_video(url, temp_dir, progress_hook):
     ydl_opts = {
         'format': 'bestvideo[ext=mp4][height>=1080]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
         'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
         'merge_output_format': 'mp4',
         'progress_hooks': [progress_hook],
-        'socket_timeout': 30,
-        'throttledratelimit': 100000,
-        'sleep_interval': 2,
-        'max_sleep_interval': 5,
-        'nocheckcertificate': True,
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'socket_timeout': 60
     }
     
     if os.path.exists(COOKIES_PATH):
         ydl_opts['cookiefile'] = COOKIES_PATH
         
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        try:
-            info = ydl.extract_info(url, download=True)
-            filename = ydl.prepare_filename(info)
+        info = ydl.extract_info(url, download=True)
+        filename = ydl.prepare_filename(info)
+        # mp4_ 제거
+        if filename.endswith('.mp4_.mp4'):
+            new_filename = filename.replace('.mp4_.mp4', '.mp4')
+            os.rename(filename, new_filename)
+            return new_filename
+        return filename
+
+
+# def download_video(url, temp_dir, progress_hook):
+#     ydl_opts = {
+#         'format': 'bestvideo[ext=mp4][height>=1080]+bestaudio[ext=m4a]/bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+#         'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
+#         'merge_output_format': 'mp4',
+#         'progress_hooks': [progress_hook],
+#         'socket_timeout': 30,
+#         'throttledratelimit': 100000,
+#         'sleep_interval': 2,
+#         'max_sleep_interval': 5,
+#         'nocheckcertificate': True,
+#         'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+#     }
+    
+#     if os.path.exists(COOKIES_PATH):
+#         ydl_opts['cookiefile'] = COOKIES_PATH
+        
+#     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+#         try:
+#             info = ydl.extract_info(url, download=True)
+#             filename = ydl.prepare_filename(info)
             
-            if filename.endswith('.mp4_.mp4'):
-                new_filename = filename.replace('.mp4_.mp4', '.mp4')
-                os.rename(filename, new_filename)
-                return new_filename
-            return filename
+#             if filename.endswith('.mp4_.mp4'):
+#                 new_filename = filename.replace('.mp4_.mp4', '.mp4')
+#                 os.rename(filename, new_filename)
+#                 return new_filename
+#             return filename
             
-        except Exception as e:
-            print(f"Download error: {str(e)}")
-            raise
+#         except Exception as e:
+#             print(f"Download error: {str(e)}")
+#             raise
 
 # def download_video(url, temp_dir, progress_hook):
 #     ydl_opts = {
