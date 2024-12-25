@@ -1,7 +1,7 @@
 # gunicorn_config.py
 workers = 2
 threads = 4
-timeout = 600
+timeout = 2000
 max_requests = 1000
 max_requests_jitter = 50
 worker_class = 'gthread'
