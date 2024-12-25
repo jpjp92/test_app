@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
 app = Flask(__name__)
 COOKIES_PATH = os.path.join(os.path.dirname(__file__), './cookies.txt')
-DOWNLOAD_TIMEOUT = 300
+DOWNLOAD_TIMEOUT = 900
 
 def get_video_info(url, ydl_opts):
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
