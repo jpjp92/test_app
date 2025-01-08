@@ -8,4 +8,4 @@ worker_class = 'gthread'
 worker_tmp_dir = '/dev/shm'
 
 # Memory limits
-worker_max_memory_per_child = 200000  # 200MB
+worker_max_memory_per_child = 2200000  # 2200MB
